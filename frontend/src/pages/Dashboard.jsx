@@ -13,7 +13,7 @@ const formatDate = (dateStr) => {
 };
 
 const Dashboard = () => {
-  const { user, logout, refreshProfile } = useAuth();
+  const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [profile, setProfile] = useState(null);
   const [fetchError, setFetchError] = useState('');

@@ -10,44 +10,47 @@ const userRoutes = require("./routes/user.routes");
 
 const app = express();
 
-// Allowed origins: Vercel domain in production, localhost in development
-const allowedOrigins = [
+const baseAllowedOrigins = [
   "http://localhost:5173",
   "http://localhost:3000",
 ];
 
-// Add production frontend URL if set
-if (process.env.FRONTEND_URL) {
-  allowedOrigins.push(process.env.FRONTEND_URL.replace(/\/$/, ""));
-}
+const corsOptions = {
+  origin: function (origin, callback) {
+    if (!origin) return callback(null, true);
 
-app.use(
-  cors({
-    origin: function (origin, callback) {
-      // Allow requests with no origin (Postman, Render health checks, curl)
-      if (!origin) return callback(null, true);
-      const normalized = origin.replace(/\/$/, "");
-      if (allowedOrigins.includes(normalized)) {
-        return callback(null, true);
-      }
-      return callback(new Error(`CORS: origin ${origin} not allowed`));
-    },
-    credentials: true,
-  })
-);
+    const normalized = origin.replace(/\/$/, "");
+
+    const allowedOrigins = [...baseAllowedOrigins];
+    if (process.env.FRONTEND_URL) {
+      allowedOrigins.push(process.env.FRONTEND_URL.replace(/\/$/, ""));
+    }
+
+    if (allowedOrigins.includes(normalized)) {
+      return callback(null, true);
+    }
+
+    if (normalized.endsWith(".vercel.app")) {
+      return callback(null, true);
+    }
+
+    return callback(new Error(`CORS: origin ${origin} not allowed`));
+  },
+  credentials: true,
+};
+
+app.use(cors(corsOptions));
+app.options("*", cors(corsOptions));
 
 app.use(express.json());
 
-// Health check — Render pings this to verify the service is up
 app.get("/", (req, res) => {
   res.json({ status: "ok", message: "API is running" });
 });
 
-// Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/user", userRoutes);
 
-// Global error handler
 app.use((err, req, res, next) => {
   console.error(err.stack);
   res
@@ -55,16 +58,15 @@ app.use((err, req, res, next) => {
     .json({ message: err.message || "Internal Server Error" });
 });
 
-// Connect to MongoDB then start server
 const PORT = process.env.PORT || 5000;
 
 mongoose
   .connect(process.env.MONGO_URI)
   .then(() => {
-    console.log("✅ Connected to MongoDB");
-    app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
+    console.log("Connected to MongoDB");
+    app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
   })
   .catch((err) => {
-    console.error("❌ MongoDB connection error:", err.message);
+    console.error("MongoDB connection error:", err.message);
     process.exit(1);
   });
