@@ -120,7 +120,7 @@ const Signup = () => {
                 name="email"
                 type="email"
                 autoComplete="email"
-                placeholder="jane@example.com"
+                placeholder="arshjotsingh05@gmail.com"
                 value={form.email}
                 onChange={handleChange}
                 className={`input-field ${errors.email ? "border-red-400 focus:ring-red-400" : ""}`}
